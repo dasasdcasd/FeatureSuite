@@ -16,6 +16,7 @@ jobs:
       run: |
         if [ -f FeatureSuite.zip ]; then
           unzip -o FeatureSuite.zip
+          cp -r FeatureSuite/* . || true
         fi
 
     - name: Set up JDK 21
