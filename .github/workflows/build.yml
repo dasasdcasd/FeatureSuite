@@ -12,9 +12,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Force Extract Everything
-      run: |
-        unzip -o FeatureSuite.zip || true
+    - name: Force Extract Zip
+      run: unzip -o FeatureSuite.zip || true
 
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -23,11 +22,20 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Smart Compile
+    - name: Patch Bugs and Compile
       run: |
-        # Automatically locate the folder that actually contains the Java source code
-        cd $(dirname $(find . -name "src" -type d | head -n 1))
-        mvn clean package
+        # 1. Find the actual project root (where pom.xml is) and move into it
+        PROJECT_ROOT=$(dirname $(find . -name "pom.xml" | head -n 1))
+        cd $PROJECT_ROOT
+        
+        # 2. Fix the impossible Paper API version in pom.xml
+        sed -i 's/1.21.11-R0.1-SNAPSHOT/1.21.1-R0.1-SNAPSHOT/g' pom.xml
+        
+        # 3. Fix the broken import in RecordingSessionModule.java
+        sed -i 's/org.bukkit.event.player.AsyncChatEvent/io.papermc.paper.event.player.AsyncChatEvent/g' src/main/java/com/devkit/features/module/impl/RecordingSessionModule.java
+        
+        # 4. Compile the plugin
+        mvn clean package -B
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
